@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Full Page",
+  "version": "1.0.0",
+  "description": "Capture the whole page in Brave. Preview it and save a PNG on your device.",
+  "homepage_url": "https://github.com/jewei/browser-screenshot",
+  "minimum_chrome_version": "118",
+  "permissions": ["activeTab", "debugger", "storage"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "action": {
+    "default_title": "Full Page: capture this page",
+    "default_popup": "popup.html",
+    "default_icon": { "16": "icons/16.png", "32": "icons/32.png" }
+  },
+  "icons": { "16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png" },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": { "default": "Alt+Shift+S", "mac": "Alt+Shift+S" }
+    }
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'; connect-src 'none'; img-src 'self' blob:; style-src 'self'; font-src 'self'; base-uri 'none'; frame-ancestors 'none'"
+  }
+}

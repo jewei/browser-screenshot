@@ -1,0 +1,34 @@
+{
+  "name": "brave-full-page",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A local full-page screenshot extension for Brave.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jewei/browser-screenshot.git"
+  },
+  "homepage": "https://github.com/jewei/browser-screenshot#readme",
+  "bugs": {
+    "url": "https://github.com/jewei/browser-screenshot/issues"
+  },
+  "scripts": {
+    "assets": "bun scripts/assets.mjs",
+    "brave": "bun scripts/brave.mjs",
+    "test": "bun test",
+    "test:browser": "bun scripts/verify.mjs",
+    "capture:github": "bun scripts/verify.mjs --github",
+    "package": "bun scripts/package.mjs"
+  },
+  "engines": {
+    "bun": ">=1.4.1"
+  },
+  "packageManager": "bun@1.4.1",
+  "devDependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@fontsource-variable/space-grotesk": "^5.3.0",
+    "playwright-core": "^1.63.0",
+    "pngjs": "^7.0.0"
+  }
+}

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Full page capture test</title>
+  <style>
+    html { scroll-behavior: smooth; }
+    body { margin: 0; color: #182331; font: 20px/1.6 system-ui; background: #f8f9fa; }
+    header { position: fixed; top: 0; left: 0; right: 0; height: 64px; background: #2045a0; color: white; z-index: 1; }
+    header, section, footer { box-sizing: border-box; padding: 16px 48px; }
+    section { height: 850px; border-bottom: 1px solid #d7dce1; }
+    section:first-of-type { padding-top: 120px; }
+    #lazy-image { display: block; width: 200px; height: 120px; }
+    footer { height: 96px; background: #d73545; color: white; }
+  </style>
+</head>
+<body>
+  <header>Fixed header: one copy</header>
+  <section><h1>Capture the complete document.</h1><p>The screenshot must include the red footer.</p></section>
+  <section><h2>The middle of the page</h2><p>The browser must restore the original scroll position.</p></section>
+  <section><h2>Images loaded on scroll</h2><img id="lazy-image" loading="lazy" alt="Green test image"><p id="lazy-status">Image pending</p></section>
+  <footer id="page-footer">End of the document</footer>
+  <script>
+    const image = document.querySelector('#lazy-image');
+    new IntersectionObserver((entries, observer) => {
+      if (!entries.some(entry => entry.isIntersecting)) return;
+      image.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="120"%3E%3Cpath fill="%23189958" d="M0 0h200v120H0z"/%3E%3C/svg%3E';
+      document.querySelector('#lazy-status').textContent = 'Image loaded';
+      observer.disconnect();
+    }).observe(image);
+  </script>
+</body>
+</html>

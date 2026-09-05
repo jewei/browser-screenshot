@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Screenshot preview · Full Page</title>
+    <link rel="stylesheet" href="styles.css">
+    <script type="module" src="preview.js"></script>
+  </head>
+  <body class="preview-body">
+    <header class="app-header">
+      <div class="brand"><img src="icons/32.png" width="28" height="28" alt=""><span>Full Page</span></div>
+      <span class="header-caption">Screenshot preview</span>
+      <span class="local-label">ON DEVICE</span>
+    </header>
+    <main class="workspace">
+      <aside class="details">
+        <div class="capture-heading"><span class="status-mark" aria-hidden="true"></span><span id="capture-label">Loading screenshot</span></div>
+        <h1 id="capture-title">Your full page.</h1>
+        <p id="source-url" class="source-url"></p>
+        <dl id="metadata" class="metadata" hidden>
+          <div><dt>Image size</dt><dd id="dimensions"></dd></div>
+          <div><dt>File size</dt><dd id="file-size"></dd></div>
+          <div><dt>Format</dt><dd>PNG</dd></div>
+          <div><dt>Captured</dt><dd id="captured-at"></dd></div>
+        </dl>
+        <a id="download" class="button primary full-width" hidden>Download PNG <span aria-hidden="true">↓</span></a>
+        <a id="open-source" class="text-link" target="_blank" rel="noreferrer" hidden>Open source page <span aria-hidden="true">↗</span></a>
+        <p id="image-warning" class="notice" hidden></p>
+        <div class="storage-note"><p>The image stays on this device.</p><p>Download a copy to keep it. Each new capture clears previews older than 7 days and keeps the latest 10.</p></div>
+      </aside>
+      <section class="preview-panel" aria-label="Screenshot">
+        <div class="viewer-toolbar"><span id="viewer-label">Preview</span><label class="view-control" for="view-mode">View <select id="view-mode" disabled><option value="width">Fit width</option><option value="page">Fit page</option><option value="actual">Actual size</option></select></label></div>
+        <div id="preview-stage" class="preview-stage" data-view="width" tabindex="0" aria-label="Scrollable screenshot preview">
+          <div id="empty-state" class="empty-state" role="status"><span class="page-mark" aria-hidden="true"></span><p id="empty-message">Loading your screenshot.</p><p id="empty-help" class="muted">The full image will appear here.</p></div>
+          <figure id="image-frame" class="image-frame" hidden><img id="screenshot" alt="Full-page screenshot" decoding="async"></figure>
+        </div>
+        <footer class="viewer-footer"><span id="image-caption">Full-page PNG</span><span id="view-hint">Scroll to inspect the image</span></footer>
+      </section>
+    </main>
+  </body>
+</html>
