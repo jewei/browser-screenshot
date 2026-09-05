@@ -32,6 +32,10 @@ button, select { cursor: pointer; }
 .popup { padding: var(--space-6); }
 .popup .brand { margin-bottom: var(--space-8); }
 .popup h1 { font-size: 30px; }
+.consent-panel p { margin-top: var(--space-4); font-size: var(--text-label); }
+.consent-panel .button { margin-top: var(--space-2); }
+.consent-panel .text-link { margin-top: var(--space-2); }
+button.text-link { padding: 0; border: 0; background: transparent; color: var(--color-accent); cursor: pointer; }
 .intro { margin-top: var(--space-3); max-width: 32ch; color: var(--color-muted); }
 .source-summary { display: flex; flex-direction: column; gap: var(--space-1); padding-block: var(--space-5); margin-top: var(--space-3); border-bottom: var(--rule-width) solid var(--color-rule); }
 .field-label { font-size: var(--text-small); color: var(--color-muted); }

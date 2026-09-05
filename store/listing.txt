@@ -1,0 +1,79 @@
+NAME
+Full Page
+
+LANGUAGE
+English
+
+CATEGORY
+Productivity / Tools, or the closest screenshot tool category in the dashboard.
+
+SHORT DESCRIPTION
+Capture the whole page in Brave. Preview it and save a PNG on your device.
+
+DETAILED DESCRIPTION
+Capture a complete web page in Brave and save it as a PNG.
+
+Open a website and click Full Page. On first use, read the data use notice and select Agree and continue. Click Capture full page. Inspect the result with Fit width, Fit page, or Actual size. Click Download PNG to keep the image.
+
+Load page images scrolls the page before capture. Full Page then restores your original scroll position. Brave shows a debugging banner while the capture runs.
+
+Full Page processes the selected page's image, address, and title on your device. It has no server, analytics, or uploads. The source website can load its own content during capture.
+
+Previews are encrypted with a key held in browser memory. They expire when the browser restarts or the extension updates, disables, or reloads. Each new capture removes old previews and keeps the latest ten for up to seven days. Clear saved previews removes all local previews and their key. Downloaded PNG files remain until you delete them.
+
+HTTP and HTTPS websites are supported. Browser settings and protected pages cannot be captured. Content inside separate scrolling panels stays as displayed. Expand hidden sections before capture. Close developer tools if another debugger is connected to the tab.
+
+HOMEPAGE
+https://github.com/jewei/browser-screenshot
+
+SUPPORT
+https://github.com/jewei/browser-screenshot/issues
+
+PRIVACY POLICY
+https://github.com/jewei/browser-screenshot/blob/main/PRIVACY.md
+
+SINGLE PURPOSE
+Capture the complete page selected by the user as a PNG, then let the user preview and download that image on their device.
+
+ACTIVE TAB PERMISSION
+After the user agrees to the data use notice, read the selected tab's address and title when they open the extension. Show these details so the user can identify the page to capture. This uses temporary tab access.
+
+DEBUGGER PERMISSION
+Attach only to the selected tab when the user starts a capture. Use Chrome DevTools Protocol Page and Runtime commands to measure the page, prepare its images, and create one full-page PNG through Page.captureScreenshot with captureBeyondViewport. The packaged preparation functions run through Runtime.evaluate in an isolated world. They are not downloaded. Restore the page and detach when capture ends. This API captures the document beyond the visible viewport without stitching multiple screenshots. The browser displays its debugging banner during capture.
+
+STORAGE PERMISSION
+Save consent and the Load page images setting in chrome.storage.local. Keep capture progress, the latest preview link, and the encryption key in chrome.storage.session, which stays in memory. Store encrypted PNG previews and page details in local IndexedDB. No sync storage is used.
+
+REMOTE CODE
+No. All executable code and fonts ship with the extension. Runtime.evaluate receives only packaged functions and local arguments. The extension never downloads scripts or other executable code.
+
+DATA USE
+Declare Website content and Web browsing activity. Handling is local, with no uploads. The screenshot may contain any information visible on the selected page. The URL may include its query string and fragment. The extension does not access browser cookies, password storage, or browsing history APIs.
+
+LIMITED USE CERTIFICATIONS
+The extension does not sell or transfer user data to third parties.
+It uses user data only for its stated screenshot purpose.
+It does not use or transfer user data for creditworthiness or lending decisions.
+
+TEST INSTRUCTIONS
+No account, payment, or test credentials are needed to use the extension.
+
+1. Open https://github.com/jewei and wait for the page to load.
+2. Open Full Page from the browser toolbar. On first use, read the notice and click Agree and continue. Selecting Not now closes the popup without reading tab details.
+3. Keep Load page images enabled. Click Capture full page. The browser shows a debugging banner during capture.
+4. In the preview, select Fit page to inspect the complete image, including the footer. Select Actual size to inspect its details. Click Download PNG.
+5. Return to the source tab and check that its original scroll position is restored.
+6. Reload the preview. It remains available in the same browser session.
+7. Click Clear saved previews. Saved records and the session key are removed, and open image views clear.
+
+The encryption key exists only in chrome.storage.session. Restarting the browser or reloading the extension expires saved previews. Browser settings and store pages cannot be captured. Close developer tools before capture. For a page that keeps growing, turn off Load page images and capture its current content.
+
+DISTRIBUTION
+Use Public for a searchable listing, or Unlisted for installation through a direct link. Both require review. Select free distribution. Choose the supported regions in the dashboard.
+
+UPLOAD FILES
+Package: full-page-1.1.0.zip
+Icon: images/icon-128.png
+Small promotional image: images/small-promo.png
+Screenshot 1: images/01-full-page.png
+Screenshot 2: images/02-page-detail.png

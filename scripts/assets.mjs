@@ -16,10 +16,11 @@ for (const name of ["space-grotesk", "inter", "jetbrains-mono"]) {
 
 for (const size of [16, 32, 48, 128]) {
   const png = new PNG({ width: size, height: size });
-  const scale = size / 32;
+  const padding = size === 128 ? 16 : 0;
+  const scale = (size - 2 * padding) / 32;
   function rect(x, y, width, height, color) {
-    for (let row = Math.round(y * scale); row < Math.round((y + height) * scale); row++) {
-      for (let col = Math.round(x * scale); col < Math.round((x + width) * scale); col++) {
+    for (let row = padding + Math.round(y * scale); row < padding + Math.round((y + height) * scale); row++) {
+      for (let col = padding + Math.round(x * scale); col < padding + Math.round((x + width) * scale); col++) {
         const offset = (row * size + col) * 4;
         png.data.set(color, offset);
       }

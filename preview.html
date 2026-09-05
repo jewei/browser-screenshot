@@ -27,7 +27,7 @@
         <a id="download" class="button primary full-width" hidden>Download PNG <span aria-hidden="true">↓</span></a>
         <a id="open-source" class="text-link" target="_blank" rel="noreferrer" hidden>Open source page <span aria-hidden="true">↗</span></a>
         <p id="image-warning" class="notice" hidden></p>
-        <div class="storage-note"><p>The image stays on this device.</p><p>Download a copy to keep it. Each new capture clears previews older than 7 days and keeps the latest 10.</p></div>
+        <div class="storage-note"><p>The image stays on this device.</p><p>Download a copy to keep it. Encrypted previews expire when the browser restarts or the extension reloads. Each capture keeps the latest 10 for up to 7 days.</p><button id="clear-previews" class="text-link" hidden>Clear saved previews</button><p id="clear-status" role="status"></p></div>
       </aside>
       <section class="preview-panel" aria-label="Screenshot">
         <div class="viewer-toolbar"><span id="viewer-label">Preview</span><label class="view-control" for="view-mode">View <select id="view-mode" disabled><option value="width">Fit width</option><option value="page">Fit page</option><option value="actual">Actual size</option></select></label></div>

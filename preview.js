@@ -6,6 +6,22 @@ const image = document.querySelector("#screenshot");
 const viewMode = document.querySelector("#view-mode");
 let objectUrl;
 
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "session" && changes.captureSession?.oldValue) location.reload();
+});
+
+document.querySelector("#clear-previews").addEventListener("click", async (event) => {
+  event.target.disabled = true;
+  try {
+    const result = await chrome.runtime.sendMessage({ type: "CLEAR_CAPTURES" });
+    if (!result.ok) throw new Error(result.error);
+    location.reload();
+  } catch (error) {
+    document.querySelector("#clear-status").textContent = error.message;
+    event.target.disabled = false;
+  }
+});
+
 viewMode.addEventListener("change", () => {
   stage.dataset.view = viewMode.value;
   stage.scrollTo({ top: 0, left: 0, behavior: "instant" });
@@ -47,6 +63,7 @@ async function init() {
   download.href = objectUrl;
   download.download = capture.filename;
   download.hidden = false;
+  document.querySelector("#clear-previews").hidden = false;
   const source = document.querySelector("#open-source");
   if (isCapturableUrl(capture.url)) { source.href = capture.url; source.hidden = false; }
   if (capture.incompleteImages) {

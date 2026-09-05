@@ -13,32 +13,36 @@ Brave can install Chrome Web Store extensions through **Add to Brave**. Users do
 
 ## Files and store images
 
-After you resolve the submission issues below, run `bun run package`. Upload `dist/full-page-1.0.0.zip` as a new item. The ZIP must contain `manifest.json` at its root. [Package preparation](https://developer.chrome.com/docs/webstore/prepare), [ZIP upload](https://developer.chrome.com/docs/webstore/publish).
+Run `bun run store:bundle`. Upload `dist/web-store-1.1.0/full-page-1.1.0.zip` as a new item. The same folder contains the listing text, privacy policy, and all required images. The ZIP contains `manifest.json` at its root. [Package preparation](https://developer.chrome.com/docs/webstore/prepare), [ZIP upload](https://developer.chrome.com/docs/webstore/publish).
 
 | Asset | Required size and format |
 | --- | --- |
-| Extension icon | 128 × 128 pixels, PNG. This project provides `icons/128.png`. |
-| Small promotional image | 440 × 280 pixels, PNG or JPEG. |
-| Store screenshots | At least one, maximum five. Use 1280 × 800 pixels. The image guide also permits 640 × 400. |
+| Extension icon | `images/icon-128.png`, 128 × 128 pixels with 16-pixel transparent padding. |
+| Small promotional image | `images/small-promo.png`, 440 × 280 pixels. |
+| Store screenshots | `images/01-full-page.png` and `images/02-page-detail.png`, both 1280 × 800 pixels. |
 | Optional marquee image | 1400 × 560 pixels, PNG or JPEG. |
 
 Screenshots must show the actual extension. Use square corners with no padding. For square icon artwork, the image guide recommends 96 × 96 pixels within the 128 × 128 file. [Image requirements](https://developer.chrome.com/docs/webstore/images), [listing fields](https://developer.chrome.com/docs/webstore/cws-dashboard-listing).
+
+The supplied screenshots show the actual extension capturing the included fictional sample page. They contain no account data. Regenerate them with `bun run store:assets`. Source assets are in [store/assets](../store/assets).
 
 ## Text for the store listing
 
 Use **Full Page** as the name and **English** as the language. Select the category that best fits screenshot tools.
 
+All fields and reviewer instructions are also available in [store/listing.txt](../store/listing.txt) for copying into the dashboard.
+
 Copy this description:
 
 > Capture a complete web page in Brave and save it as a PNG.
 >
-> Open a website, click Full Page, then click Capture full page. Inspect the result in the preview. Choose Fit width, Fit page, or Actual size. Click Download PNG to keep the image.
+> Open a website and click Full Page. On first use, read the data use notice and select Agree and continue. Click Capture full page. Inspect the result in the preview. Choose Fit width, Fit page, or Actual size. Click Download PNG to keep the image.
 >
 > The Load page images option scrolls the page before capture. Full Page then restores the original scroll position. Brave shows a debugging banner while the capture runs.
 >
 > Full Page handles the selected page's image, address, and title on your device. It keeps local previews and the image-loading setting. It has no server, analytics, or uploads. The website can load its own content during capture.
 >
-> Each completed capture removes saved previews older than seven days and keeps the newest ten. Cleanup runs when you make another capture. Downloaded files remain until you delete them.
+> Previews use encryption with a key held in browser memory. They expire when the browser restarts or the extension updates, disables, or reloads. Each new capture removes old previews and keeps the latest ten for up to seven days. Clear saved previews removes local previews and their key. Downloaded files remain until you delete them.
 >
 > HTTP and HTTPS websites are supported. Browser settings and protected pages cannot be captured. Content inside separate scrolling panels stays as displayed. Expand hidden sections before capture.
 
@@ -62,32 +66,33 @@ Copy these permission reasons:
 
 | Permission | Reason |
 | --- | --- |
-| `activeTab` | Read the selected tab's address and title after the user opens the extension. Show this information so the user can identify the page to capture. This uses temporary tab access. |
+| `activeTab` | After agreement to the data use notice, read the selected tab's address and title when the user opens the extension. Show this information so the user can identify the page to capture. This uses temporary tab access. |
 | `debugger` | Attach to the selected tab when the user starts a capture. Use the Chrome DevTools Protocol to measure the page, prepare its images, and create one full-page PNG with Page.captureScreenshot and captureBeyondViewport. Run the packaged page-preparation functions through Runtime.evaluate in an isolated world. Restore the page and detach when capture ends. |
-| `storage` | Save the Load page images setting in chrome.storage.local. Keep capture progress and the latest preview link in chrome.storage.session so the popup can close during capture. PNG previews use a separate local IndexedDB database. |
+| `storage` | Save consent and the Load page images setting in chrome.storage.local. Keep capture progress, the latest preview link, and the encryption key in chrome.storage.session. PNG previews and page details use encrypted local IndexedDB records. |
 
 The code review supports **No, I am not using remote code**. All page-preparation functions ship in the ZIP. `Runtime.evaluate` receives those functions and local arguments. It does not fetch executable code. See [capture code](../lib/capture.js) and [page code](../lib/page.js).
 
 Declare website content and web browsing activity, including the captured page's address and title. Explain that handling is local. Screenshots can include information visible in signed-in pages. Do not claim that the extension handles no user data. The current FAQ explicitly includes local processing and storage. [Local data disclosure](https://developer.chrome.com/docs/webstore/program-policies/user-data-faq).
 
-Provide the public privacy-policy URL. The policy must explain collection, use, sharing, and local retention. [Privacy policy rule](https://developer.chrome.com/docs/webstore/program-policies/privacy). Include a statement that the extension follows the store's Limited Use requirements. Complete the dashboard certifications only when they match the code and policy. [Limited Use rule](https://developer.chrome.com/docs/webstore/program-policies/limited-use).
+Provide the public privacy-policy URL. The supplied policy explains collection, use, sharing, and local retention. It also contains the Limited Use statement. The extension uses data only for its screenshot purpose and does not sell or transfer it, use it for unrelated purposes, or use it for credit decisions. [Privacy policy rule](https://developer.chrome.com/docs/webstore/program-policies/privacy), [Limited Use rule](https://developer.chrome.com/docs/webstore/program-policies/limited-use).
 
 ## Current data handling
 
 These statements come from [capture.js](../lib/capture.js), [page.js](../lib/page.js), [storage.js](../lib/storage.js), [background.js](../background.js), and [popup.js](../popup.js).
 
-- The extension stores the PNG, page address and title, capture time, image dimensions, file size, filename, and image-load status in IndexedDB.
+- The extension encrypts the PNG, page address and title, image dimensions, file size, filename, and image-load status before writing them to IndexedDB. Capture ID, time, and random session ID remain readable for lookup and cleanup.
 - The stored address can include a query string or fragment.
-- After a successful capture, cleanup removes previews older than seven days and keeps at most the newest ten. There is no seven-day deletion timer. Without another capture, old records can remain.
-- The image-loading setting remains in local extension storage. Capture progress and the last preview link use session storage. Chrome clears session storage on restart, extension disable, reload, or update. [Storage API](https://developer.chrome.com/docs/extensions/reference/api/storage#storage-areas).
+- The 256-bit AES-GCM key stays in chrome.storage.session. Chrome keeps this storage in memory and clears it on restart, extension disable, reload, or update. Previews from earlier sessions then become unreadable. [Storage API](https://developer.chrome.com/docs/extensions/reference/api/storage#storage-areas).
+- After a successful capture, cleanup removes past-session previews and those older than seven days, then keeps at most the newest ten. Startup and installation events also run cleanup. Opening an expired preview deletes it. There is no daily deletion timer. Encrypted records can remain until cleanup runs.
+- Consent and the image-loading setting remain in local extension storage. Capture progress and the last preview link use session storage.
 - The extension has no server, telemetry, upload, or browser-sync code. Its content security policy blocks network connections from extension pages. The source website can still load resources during capture. See [manifest.json](../manifest.json).
-- Removing the extension removes its saved previews and settings. Downloaded PNG files are separate files and remain on the device.
+- Clear saved previews removes all stored previews and the session key, and clears open image views. Removing the extension also removes settings and consent. Downloaded PNG files are separate, unencrypted files and remain on the device.
 
-## Submission issues to resolve
+## Changes made for submission
 
-The current popup does not explain all saved data before use. FAQ section 10 requires a prominent disclosure and an affirmative action inside the extension before data handling. Store text alone is insufficient. Add this first-use flow before submission. It must precede the tab metadata read, which currently runs when the popup opens. [Disclosure and consent requirements](https://developer.chrome.com/docs/webstore/program-policies/user-data-faq).
+Version 1.1.0 includes a first-use notice and an **Agree and continue** action before tab metadata access. **Not now** closes the popup. The background worker also checks consent before capture. This addresses the prominent disclosure requirement in FAQ section 10. [Disclosure and consent requirements](https://developer.chrome.com/docs/webstore/program-policies/user-data-faq).
 
-The extension stores plain IndexedDB records and PNG blobs without application encryption. FAQ section 9 requires encryption at rest and gives no local-storage exception. Resolve this storage issue before submission, or obtain clarification from store support. The review outcome is not known. [Encryption requirement](https://developer.chrome.com/docs/webstore/program-policies/user-data-faq), [handling rule](https://developer.chrome.com/docs/webstore/program-policies/data-handling).
+The extension encrypts page content and metadata with AES-GCM before database writes. It uses a random IV for each record and keeps the key only in memory. It removes old unencrypted version 1.0.0 records on database upgrade. This addresses the storage requirement in FAQ section 9. Browser controls and device security still matter. [Encryption requirement](https://developer.chrome.com/docs/webstore/program-policies/user-data-faq), [handling rule](https://developer.chrome.com/docs/webstore/program-policies/data-handling).
 
 There is no documented blanket ban on `debugger` for this implementation. The API supports the Page and Runtime domains. The protocol documents full-page capture. MV3 policy explicitly recognizes debugger API use. [Debugger API](https://developer.chrome.com/docs/extensions/reference/api/debugger), [capture command](https://chromedevtools.github.io/devtools-protocol/tot/Page/#method-captureScreenshot), [MV3 rules](https://developer.chrome.com/docs/webstore/program-policies/mv3-requirements).
 
@@ -95,7 +100,7 @@ This is an assessment from the code and documentation, not store approval. Expla
 
 ## Submit and install
 
-1. Complete the account requirements and resolve the submission issues above.
+1. Complete the account requirements above. Registration alone does not confirm email verification, two-step verification, or trader status.
 2. Upload the ZIP, listing images, description, privacy fields, and policy URL.
 3. Select **Public** for a searchable store listing. Select **Unlisted** for installation through its direct store URL. Both require the same review and policy compliance. [Distribution options](https://developer.chrome.com/docs/webstore/cws-dashboard-distribution).
 4. Add the reviewer steps below. Click **Submit for Review**. Choose automatic publication or publication after approval. [Submission process](https://developer.chrome.com/docs/webstore/publish).
@@ -106,8 +111,10 @@ Copy these reviewer steps:
 
 > No account, payment, or test credentials are needed to use the extension.
 >
-> Open https://github.com/jewei and wait for the page to load. Open Full Page from the browser toolbar. Keep Load page images enabled. Click Capture full page.
+> Open https://github.com/jewei and wait for the page to load. Open Full Page from the browser toolbar. On first use, read the notice and click Agree and continue. Keep Load page images enabled. Click Capture full page.
 >
 > The browser shows a debugging banner during capture. The preview opens in a new tab. Select Fit page to inspect the complete image. Select Actual size to inspect its details. Click Download PNG. The file must include the bottom of the page. Return to the source tab and check that its original scroll position is restored.
 >
 > Close developer tools before capture. Browser settings and store pages cannot be captured. For a page that keeps growing, turn off Load page images and capture its current content.
+>
+> Reload the preview during the same browser session. The image remains available. Click Clear saved previews. All saved previews and their session key are removed, and open image views clear. Restarting the browser also expires previews because the key stays only in memory.

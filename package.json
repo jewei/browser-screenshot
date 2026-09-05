@@ -1,6 +1,6 @@
 {
   "name": "brave-full-page",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "description": "A local full-page screenshot extension for Brave.",
@@ -18,7 +18,9 @@
     "test": "bun test",
     "test:browser": "bun scripts/verify.mjs",
     "capture:github": "bun scripts/verify.mjs --github",
-    "package": "bun scripts/package.mjs"
+    "package": "bun scripts/package.mjs",
+    "store:assets": "bun scripts/store-assets.mjs",
+    "store:bundle": "bun scripts/store-bundle.mjs"
   },
   "engines": {
     "bun": ">=1.4.1"

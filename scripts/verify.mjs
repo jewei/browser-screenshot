@@ -79,6 +79,33 @@ try {
   await source.goto(fixtureUrl);
   await source.evaluate(() => scrollTo({ top: 450, behavior: "instant" }));
   const original = await source.evaluate(() => ({ x: scrollX, y: scrollY, height: document.documentElement.scrollHeight, width: document.documentElement.scrollWidth }));
+  const firstPopup = await context.newPage();
+  await firstPopup.addInitScript(() => {
+    window.metadataReads = 0;
+    for (const [api, method] of [[chrome.tabs, "query"], [chrome.debugger, "getTargets"]]) {
+      const original = api[method].bind(api);
+      api[method] = (...args) => { window.metadataReads++; return original(...args); };
+    }
+  });
+  await source.bringToFront();
+  await firstPopup.goto(`chrome-extension://${extensionId}/popup.html`);
+  await firstPopup.locator("#consent-panel").waitFor({ state: "visible" });
+  assert.equal(await firstPopup.evaluate(() => window.metadataReads), 0, "No tab metadata is read before consent");
+  assert.equal(await firstPopup.locator("#capture-panel").isHidden(), true);
+  await firstPopup.evaluate(async () => {
+    await chrome.runtime.sendMessage({ type: "START_CAPTURE", tabId: 1, loadImages: false });
+  });
+  await firstPopup.waitForFunction(async () => (await chrome.storage.session.get("captureState")).captureState?.status === "error");
+  assert.match((await readState()).message, /agree to the data use notice/);
+  assert.equal(await firstPopup.evaluate(() => window.metadataReads), 0);
+  await firstPopup.reload();
+  await firstPopup.locator("#consent-panel").waitFor({ state: "visible" });
+  await firstPopup.locator("#agree").click();
+  await firstPopup.locator("#capture-panel").waitFor({ state: "visible" });
+  assert.equal(await worker.evaluate(async () => (await chrome.storage.local.get("disclosureVersion")).disclosureVersion), 1);
+  await firstPopup.close();
+  console.log("PASS first-use consent, no metadata before agreement, and background capture guard");
+
   const preview = await captureFromPopup(source);
   const png = await download(preview, "test-full-page.png");
   const scale = png.width / original.width;
@@ -118,6 +145,24 @@ try {
   }
   await preview.setViewportSize({ width: 1440, height: 900 });
   console.log("PASS saved preview reload, all view modes, and 320/375/414/768 px layouts");
+
+  const storedFields = await preview.evaluate(async () => {
+    const db = await new Promise((resolve, reject) => {
+      const request = indexedDB.open("full-page-captures");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    try {
+      return await new Promise((resolve) => {
+        db.transaction("captures").objectStore("captures").getAll().onsuccess = (event) => {
+          resolve(event.target.result.map((record) => ({ fields: Object.keys(record).sort(), encrypted: record.encrypted instanceof ArrayBuffer })));
+        };
+      });
+    } finally { db.close(); }
+  });
+  assert.deepEqual(storedFields, [{ fields: ["id", "createdAt", "sessionId", "iv", "encrypted"].sort(), encrypted: true }]);
+  assert.equal(await worker.evaluate(async () => Boolean((await chrome.storage.local.get(null)).captureSession)), false, "No encryption key is stored on disk");
+  console.log("PASS encrypted IndexedDB preview and memory-only key storage");
 
   const invalid = await context.newPage();
   await invalid.goto(`chrome-extension://${extensionId}/preview.html?id=missing`);
@@ -185,6 +230,45 @@ try {
     githubResult = { url: page.url(), title: await page.title(), pixelWidth: githubPng.width, pixelHeight: githubPng.height, capturedPage: capturedSize, restoredPage: dimensions };
     console.log(`PASS GitHub: ${githubPng.width} × ${githubPng.height}, footer included, scroll restored`);
   }
+  await widePreview.locator("#clear-previews").click();
+  await widePreview.locator("#empty-message").filter({ hasText: "no longer stored" }).waitFor();
+  await preview.locator("#empty-message").filter({ hasText: "no longer stored" }).waitFor();
+  assert.equal(await worker.evaluate(async () => Boolean((await chrome.storage.session.get("captureSession")).captureSession)), false);
+  console.log("PASS clear saved previews, remove encryption key, and close existing image views");
+
+  const sessionPreview = await captureFromPopup(source);
+  await worker.evaluate(() => chrome.storage.session.clear());
+  await sessionPreview.locator("#empty-message").filter({ hasText: "no longer stored" }).waitFor();
+  console.log("PASS preview expiry when the browser session ends");
+
+  const storageChecks = await sessionPreview.evaluate(async () => {
+    const { getCapture, saveCapture, pruneCaptures } = await import("./lib/storage.js");
+    for (let i = 0; i < 12; i++) {
+      await saveCapture({ id: `retention-${i}`, createdAt: new Date(Date.now() - i * 1000).toISOString(), title: "Storage test", blob: new Blob(["test"]) });
+    }
+    await saveCapture({ id: "expired", createdAt: new Date(Date.now() - 8 * 86400000).toISOString(), blob: new Blob(["test"]) });
+    await pruneCaptures();
+    const newest = await getCapture("retention-0");
+    const oldest = await getCapture("retention-11");
+    const expired = await getCapture("expired");
+    const request = indexedDB.deleteDatabase("full-page-captures");
+    await new Promise((resolve, reject) => { request.onsuccess = resolve; request.onerror = () => reject(request.error); });
+    // Recreate a version 1 database to verify removal of legacy plain records.
+    await new Promise((resolve, reject) => {
+      const open = indexedDB.open("full-page-captures", 1);
+      open.onupgradeneeded = () => {
+        const store = open.result.createObjectStore("captures", { keyPath: "id" });
+        store.createIndex("createdAt", "createdAt");
+        store.put({ id: "legacy", createdAt: new Date().toISOString(), title: "Private legacy title", blob: new Blob(["unencrypted"]) });
+      };
+      open.onsuccess = () => { open.result.close(); resolve(); };
+      open.onerror = () => reject(open.error);
+    });
+    const legacy = await getCapture("legacy");
+    return { newest: Boolean(newest), oldest: Boolean(oldest), expired: Boolean(expired), legacy: Boolean(legacy) };
+  });
+  assert.deepEqual(storageChecks, { newest: true, oldest: false, expired: false, legacy: false });
+  console.log("PASS preview count limit, seven-day expiry, and removal of unencrypted version 1 records");
   assert.deepEqual(errors, [], "No uncaught extension page errors");
   await writeFile(path.join(output, "verification.json"), JSON.stringify({ testedAt: new Date().toISOString(), browser: await worker.evaluate(() => navigator.userAgent), fixture: { width: png.width, height: png.height }, github: githubResult, extensionErrors: errors }, null, 2) + "\n");
 } finally {

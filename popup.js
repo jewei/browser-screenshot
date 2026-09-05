@@ -1,4 +1,5 @@
 import { isCapturableUrl } from "./lib/shared.js";
+import { acceptDisclosure, hasConsent } from "./lib/consent.js";
 
 const captureButton = document.querySelector("#capture");
 const loadImages = document.querySelector("#load-images");
@@ -8,6 +9,7 @@ const progress = document.querySelector("#progress");
 const lastPreview = document.querySelector("#last-preview");
 let tab;
 let allowed = false;
+let consentGranted = false;
 
 function showState(state) {
   if (!state) return;
@@ -29,8 +31,22 @@ function showState(state) {
 }
 
 chrome.runtime.onMessage.addListener((message) => {
-  if (message.type === "CAPTURE_STATE") showState(message.state);
+  if (consentGranted && message.type === "CAPTURE_STATE") showState(message.state);
 });
+
+document.querySelector("#agree").addEventListener("click", async (event) => {
+  event.target.disabled = true;
+  try {
+    await acceptDisclosure();
+    await init();
+  } catch (error) {
+    showState({ status: "error", message: error.message });
+  } finally {
+    event.target.disabled = false;
+  }
+});
+
+document.querySelector("#decline").addEventListener("click", () => window.close());
 
 captureButton.addEventListener("click", async () => {
   showState({ status: "working", message: "Starting capture", progress: 0 });
@@ -49,6 +65,12 @@ loadImages.addEventListener("change", () => {
 });
 
 async function init() {
+  consentGranted = await hasConsent();
+  document.querySelector("#consent-panel").hidden = consentGranted;
+  document.querySelector("#capture-panel").hidden = !consentGranted;
+  document.querySelector("#permission-note").hidden = !consentGranted;
+  if (!consentGranted) return;
+  statusBox.hidden = true;
   const [tabs, settings] = await Promise.all([
     chrome.tabs.query({ active: true, currentWindow: true }),
     chrome.storage.local.get("loadImages"),

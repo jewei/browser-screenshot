@@ -4,9 +4,9 @@ A Brave extension that captures a complete web page as a PNG. Click the extensio
 
 ## Chrome Web Store
 
-This extension is not yet published in the Chrome Web Store. A store listing will allow installation with **Add to Brave**. Developer mode is only needed for the local installation described below. See the [publishing guide](docs/web-store.md) for account setup, store assets, permission explanations, and the changes needed before submission. [Brave store installation instructions](https://support.brave.app/hc/en-us/articles/360017909112-How-can-I-add-extensions-to-Brave).
+This extension is not yet published in the Chrome Web Store. A store listing will allow installation with **Add to Brave**. Developer mode is only needed for the local installation described below. See the [publishing guide](docs/web-store.md) for upload files, listing text, and permission explanations. [Brave store installation instructions](https://support.brave.app/hc/en-us/articles/360017909112-How-can-I-add-extensions-to-Brave).
 
-The current version saves previews in plain local IndexedDB storage. Store preparation still needs a review of encryption at rest and a consent screen that appears before page data is read. The ZIP is a development build, not an approved store release.
+Version 1.1.0 asks for consent before reading page details. It encrypts saved previews with a key held in browser memory. The ZIP is prepared for submission and has not received store approval.
 
 ## Install locally for development
 
@@ -17,7 +17,7 @@ No package installation or build is needed to use the extension. The fonts and i
 3. Click **Load unpacked**. Select this project folder, which contains `manifest.json`.
 4. Open the extensions menu in the toolbar. Pin **Full Page**.
 5. Open <https://github.com/jewei>. Wait for the page to load.
-6. Click **Full Page**, then **Capture full page**.
+6. Click **Full Page**. On first use, read the data use notice and select **Agree and continue**. Click **Capture full page**.
 7. The preview opens in a new tab. Click **Download PNG**.
 
 The shortcut is **Option + Shift + S** on macOS, or **Alt + Shift + S** on Windows and Linux. Change it at `brave://extensions/shortcuts` if another extension uses it.
@@ -63,9 +63,11 @@ The extension has no server, analytics, remote scripts, or image uploads. All fo
 | --- | --- |
 | `activeTab` | Identify the tab selected with the toolbar button. |
 | `debugger` | Read the selected page's size, prepare the page, and capture its full image. Brave gives this permission broad access. The code attaches only to the selected tab. |
-| `storage` | Store the image loading preference and capture progress. |
+| `storage` | Store consent and the image loading preference. Keep capture progress and the encryption key in browser memory. |
 
-PNG previews are stored in the extension's local IndexedDB database. Each new capture removes previews older than seven days and retains the newest ten. An already open preview remains usable until you close or reload it. Download an image to keep a separate copy. Uninstall the extension to remove its stored previews and settings.
+PNG previews and page details use AES-GCM encryption in local IndexedDB. The key stays in `chrome.storage.session`, which the browser keeps in memory. Previews expire when the browser restarts or the extension updates, disables, or reloads. Each new capture removes previews from past sessions and previews older than seven days, then retains the newest ten. An open preview can keep its image in memory until you close or reload it.
+
+Select **Clear saved previews** to remove all previews and their key. This also clears open preview pages. Download an image to keep a separate PNG file. An update from version 1.0.0 removes its old unencrypted previews. Uninstall the extension to remove stored settings and consent.
 
 ## Limits
 
@@ -86,13 +88,16 @@ bun test
 bun run test:browser
 bun run capture:github
 bun run package
+bun run store:assets
 ```
 
-The browser tests run against the installed Brave executable in a temporary profile. They click the extension's capture button and download the result through its preview. The local page test checks the bottom row, an image loaded on scroll, a fixed header, scroll restoration, error cleanup, horizontal capture, saved preview reload, view modes, and narrow layouts. `capture:github` also tests the live GitHub profile and writes `artifacts/github-jewei-full-page.png` and `artifacts/verification.json`.
+The browser tests run against the installed Brave executable in a temporary profile. They check consent before metadata access, encrypted storage, deletion, and session expiry. They click the capture button and download the result through its preview. The local page test checks the bottom row, an image loaded on scroll, a fixed header, scroll restoration, error cleanup, horizontal capture, preview reload, view modes, and narrow layouts. `capture:github` also tests the live GitHub profile and writes `artifacts/github-jewei-full-page.png` and `artifacts/verification.json`.
 
 Pass `--headed` to either browser test command to show the test browser. `bun run brave` always shows it.
 
-The package command writes `dist/full-page-1.0.0.zip`. It includes only the extension files, documentation, privacy policy, fonts, and icons. Extract the ZIP, then load the extracted folder through **Load unpacked**. The package command needs the `zip` program.
+The package command writes `dist/full-page-1.1.0.zip`. It includes only the extension files, documentation, privacy policy, fonts, and icons. Upload it through the Chrome Web Store developer dashboard. The package command needs the `zip` program.
+
+`bun run store:assets` creates the store icon, promotional image, and two screenshots in `store/assets/`. It captures the actual extension against the included sample page. `bun run store:bundle` creates `dist/web-store-1.1.0/` with all upload files and listing text.
 
 `bun run assets` regenerates the included icons and copies local fonts from development dependencies. Font licenses are in `fonts/`.
 

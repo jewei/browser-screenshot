@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Full Page",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Capture the whole page in Brave. Preview it and save a PNG on your device.",
   "homepage_url": "https://github.com/jewei/browser-screenshot",
   "minimum_chrome_version": "118",

@@ -1,5 +1,6 @@
 import { captureFullPage } from "./lib/capture.js";
-import { pruneCaptures, saveCapture } from "./lib/storage.js";
+import { clearCaptures, pruneCaptures, saveCapture } from "./lib/storage.js";
+import { hasConsent } from "./lib/consent.js";
 import { readableError } from "./lib/shared.js";
 
 let activeTask = null;
@@ -11,6 +12,7 @@ async function updateState(state) {
 
 async function runCapture(tabId, loadImages) {
   try {
+    if (!await hasConsent()) throw new Error("Open Full Page and agree to the data use notice before capture.");
     const capture = await captureFullPage(tabId, {
       loadImages,
       onProgress: (message, progress) => updateState({ status: "working", tabId, message, progress }),
@@ -52,4 +54,27 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
     })().catch((error) => reply({ error: readableError(error) }));
     return true;
   }
+  if (message.type === "CLEAR_CAPTURES") {
+    if (activeTask) {
+      reply({ ok: false, error: "Wait for the capture to finish, then clear previews." });
+      return;
+    }
+    activeTask = (async () => {
+      try {
+        await clearCaptures();
+        await chrome.storage.session.remove(["captureSession", "captureState"]);
+        reply({ ok: true });
+      } catch (error) {
+        reply({ ok: false, error: readableError(error) });
+      } finally {
+        activeTask = null;
+      }
+    })();
+    return true;
+  }
 });
+
+// Clear unreadable previews when a browser session starts. Updating or reloading
+// the extension also prunes legacy records and records from the previous session.
+chrome.runtime.onStartup.addListener(() => { pruneCaptures().catch(() => {}); });
+chrome.runtime.onInstalled.addListener(() => { pruneCaptures().catch(() => {}); });
