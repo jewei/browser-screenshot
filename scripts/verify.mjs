@@ -238,8 +238,10 @@ try {
   assert.equal(virtualPng.height, 15000 * scale);
   assert.ok(column.filter((rgb) => rgb === "255,255,255").length > 14000 * scale, "Every virtual row appears in the PNG");
   assert.ok(column.slice(-100 * scale).filter((rgb) => rgb === "215,53,69").length > 90 * scale, "The last virtual row appears in the PNG");
+  const navRows = Array.from({ length: virtualPng.height }, (_, y) => pixel(virtualPng, 5, y).join()).filter((rgb) => rgb === "32,69,160").length;
+  assert.equal(navRows, await source.evaluate(() => innerHeight) * scale, "The sticky sidebar appears only once");
   assert.equal(await source.evaluate(() => scrollY), 450);
-  console.log("PASS virtual list rows render in the PNG");
+  console.log("PASS virtual list rows and one sticky sidebar in the stitched PNG");
 
   await source.goto(fixtureUrl.replace("/long-page", "/virtual-list?infinite"));
   await source.evaluate(() => scrollTo({ top: 450, behavior: "instant" }));
