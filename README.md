@@ -74,7 +74,7 @@ Select **Clear saved previews** to remove all previews and their key. This also 
 ## Limits
 
 - The extension supports HTTP and HTTPS pages. It cannot capture Brave settings, extension pages, local files, or pages that the browser protects from capture.
-- Brave cannot capture an image taller or wider than 16,384 pixels. A PNG can also have at most 64 million pixels. If a page is larger, the extension scales the PNG down to fit, and the preview tells you. The extension shows an error if the PNG must be smaller than half a pixel for each page pixel. Reduce browser zoom, or turn off **Load page images**, to capture a larger document.
+- Brave cannot capture an image taller or wider than 16,384 pixels. A PNG can also have at most 64 million pixels. If a page is larger, the extension scales the PNG down to fit, and the preview tells you. The PNG keeps at least half a pixel for each page pixel. Below that limit, the PNG shows only the top part of the page, for example the first 32,768 pixels of an endless feed. The extension shows an error if the page is too wide. Reduce browser zoom to capture a larger document.
 - Page preparation stops after 25 seconds or 100 scroll steps. For a page that keeps growing, turn off **Load page images** to capture its current content.
 - The extension captures the outer document. Scroll areas inside panels remain as the page displays them. Expand collapsed sections and content behind a **Show more** button before capture.
 - To render virtual lists, such as X replies, the extension makes the browser viewport as tall as the page during capture. Sticky sidebars can stretch to the page height. If the page grows with the viewport, the extension uses the normal viewport, and virtual lists can show blank areas.

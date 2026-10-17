@@ -13,7 +13,7 @@ const fixture = await readFile(path.join(root, "tests/fixtures/long-page.html"))
 const virtualFixture = await readFile(path.join(root, "tests/fixtures/virtual-list.html"));
 const server = createServer((request, response) => {
   response.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-  response.end(request.url === "/virtual-list" ? virtualFixture : fixture);
+  response.end(request.url.startsWith("/virtual-list") ? virtualFixture : fixture);
 });
 await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
 const fixtureUrl = `http://127.0.0.1:${server.address().port}/long-page`;
@@ -198,10 +198,23 @@ try {
     document.body.style.minHeight = "70000px";
     scrollTo({ top: 450, behavior: "instant" });
   });
+  const cutPreview = await captureFromPopup(source);
+  const cutPng = await download(cutPreview, "test-cut-page.png");
+  assert.ok(cutPng.height <= 16384 && cutPng.height > 16384 * 0.99, "A very tall page fills the height limit");
+  assert.ok(Math.abs(cutPng.width / cutPng.height - 1440 / 32768) < 0.001, "The PNG shows the top 32,768 px of the page");
+  assert.match(await cutPreview.locator("#image-warning").innerText(), /only the top part/);
+  assert.equal(await source.evaluate(() => scrollY), 450);
+  console.log(`PASS very tall page cut at the limit: ${cutPng.width} × ${cutPng.height}`);
+
+  await source.evaluate(() => {
+    document.body.style.minHeight = "";
+    document.body.style.minWidth = "40000px";
+    scrollTo({ top: 450, behavior: "instant" });
+  });
   const oversizedPopup = await openPopupFor(source);
   await oversizedPopup.locator("#capture").click();
   await oversizedPopup.locator('#status-box[data-state="error"]').waitFor({ state: "visible" });
-  assert.match(await oversizedPopup.locator("#status").innerText(), /too large/);
+  assert.match(await oversizedPopup.locator("#status").innerText(), /too wide/);
   assert.equal(await oversizedPopup.locator("#capture").isEnabled(), true);
   assert.deepEqual(await source.evaluate(() => ({ y: scrollY, style: Boolean(document.querySelector("[data-full-page-capture]")) })), { y: 450, style: false });
   await oversizedPopup.close();
@@ -226,8 +239,18 @@ try {
   assert.ok(column.filter((rgb) => rgb === "255,255,255").length > 14000 * scale, "Every virtual row appears in the PNG");
   assert.ok(column.slice(-100 * scale).filter((rgb) => rgb === "215,53,69").length > 90 * scale, "The last virtual row appears in the PNG");
   assert.equal(await source.evaluate(() => scrollY), 450);
-  await source.goto(fixtureUrl);
   console.log("PASS virtual list rows render in the PNG");
+
+  await source.goto(fixtureUrl.replace("/long-page", "/virtual-list?infinite"));
+  await source.evaluate(() => scrollTo({ top: 450, behavior: "instant" }));
+  const feedPreview = await captureFromPopup(source);
+  const feedPng = await download(feedPreview, "test-growing-feed.png");
+  const feedColumn = Array.from({ length: feedPng.height }, (_, y) => pixel(feedPng, Math.round(feedPng.width * 0.6), y).join());
+  assert.ok(feedPng.height > 16384 * 0.99, "A growing feed fills the height limit");
+  assert.ok(feedColumn.filter((rgb) => rgb === "255,255,255").length > feedPng.height * 0.9, "Feed rows render down to the cut");
+  assert.match(await feedPreview.locator("#image-warning").innerText(), /only the top part/);
+  await source.goto(fixtureUrl);
+  console.log(`PASS growing feed cut at the limit: ${feedPng.width} × ${feedPng.height}`);
 
   let githubResult;
   if (github) {

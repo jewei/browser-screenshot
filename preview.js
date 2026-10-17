@@ -67,6 +67,9 @@ async function init() {
   const source = document.querySelector("#open-source");
   if (isCapturableUrl(capture.url)) { source.href = capture.url; source.hidden = false; }
   const warnings = [];
+  if (capture.truncated) {
+    warnings.push("The page was too long for one PNG. The image shows only the top part of the page.");
+  }
   if (capture.scaledDown) {
     warnings.push("The page was too large for one full-resolution PNG. The image is scaled down to fit.");
   }
