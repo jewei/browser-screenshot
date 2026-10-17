@@ -180,7 +180,21 @@ try {
   console.log("PASS expired or missing preview and restricted page state");
 
   await source.evaluate(() => {
-    document.body.style.minHeight = "40000px";
+    document.body.style.minHeight = "25000px";
+    scrollTo({ top: 450, behavior: "instant" });
+  });
+  const scaledPreview = await captureFromPopup(source);
+  const scaledPng = await download(scaledPreview, "test-scaled-page.png");
+  const tallSize = await source.evaluate(() => ({ width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight }));
+  assert.ok(scaledPng.height <= 16384, "The scaled PNG fits the height limit");
+  assert.ok(scaledPng.height > 16384 * 0.99, "The scaled PNG uses most of the height limit");
+  assert.ok(Math.abs(scaledPng.width / scaledPng.height - tallSize.width / tallSize.height) < 0.001, "Scaling keeps the aspect ratio");
+  assert.ok(Array.from({ length: scaledPng.height }, (_, y) => pixel(scaledPng, 10, y).join()).includes("215,53,69"), "The scaled PNG includes the footer");
+  assert.match(await scaledPreview.locator("#image-warning").innerText(), /scaled down/);
+  console.log(`PASS scaled capture of a ${tallSize.height} px page: ${scaledPng.width} × ${scaledPng.height}`);
+
+  await source.evaluate(() => {
+    document.body.style.minHeight = "70000px";
     scrollTo({ top: 450, behavior: "instant" });
   });
   const oversizedPopup = await openPopupFor(source);

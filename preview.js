@@ -66,9 +66,16 @@ async function init() {
   document.querySelector("#clear-previews").hidden = false;
   const source = document.querySelector("#open-source");
   if (isCapturableUrl(capture.url)) { source.href = capture.url; source.hidden = false; }
+  const warnings = [];
+  if (capture.scaledDown) {
+    warnings.push("The page was too large for one full-resolution PNG. The image is scaled down to fit.");
+  }
   if (capture.incompleteImages) {
+    warnings.push(`${capture.incompleteImages} page image${capture.incompleteImages === 1 ? " did" : "s did"} not load. Check the preview before you save it.`);
+  }
+  if (warnings.length) {
     const warning = document.querySelector("#image-warning");
-    warning.textContent = `${capture.incompleteImages} page image${capture.incompleteImages === 1 ? " did" : "s did"} not load. Check the preview before you save it.`;
+    warning.textContent = warnings.join(" ");
     warning.hidden = false;
   }
   document.querySelector("#empty-state").hidden = true;
