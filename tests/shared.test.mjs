@@ -16,8 +16,12 @@ test("capture bounds include the last fractional pixel and scale large pages dow
     const output = [Math.ceil(size.width * ratio * scale), Math.ceil(size.height * ratio * scale)];
     assert.ok(Math.max(...output) <= LIMITS.maxDimension && output[0] * output[1] <= LIMITS.maxPixels);
   }
-  assert.throws(() => captureBounds({ width: 1440, height: 70000 }, 1), /too large/);
-  assert.throws(() => captureBounds({ width: 1440, height: 80000 }, 2), /too large/);
+  for (const ratio of [1, 2]) {
+    const clip = captureBounds({ width: 1440, height: 80000 }, ratio);
+    assert.equal(clip.height, LIMITS.maxDimension / LIMITS.minPixelRatio, "Very tall pages are cut at the minimum pixel ratio");
+    assert.ok(Math.ceil(clip.height * ratio * clip.scale) <= LIMITS.maxDimension);
+  }
+  assert.throws(() => captureBounds({ width: 40000, height: 1000 }, 1), /too wide/);
   for (const height of [0, -1, NaN, Infinity]) assert.throws(() => captureBounds({ width: 100, height }), /valid size/);
 });
 

@@ -16,11 +16,16 @@
   <main id="list"></main>
   <script>
     // Like X and other feeds, render only rows near the viewport.
-    const rows = 150;
+    let rows = 150;
     const rowHeight = 100;
     const list = document.querySelector('#list');
     list.style.height = `${rows * rowHeight}px`;
     function render() {
+      // With ?infinite, load more rows near the end, like a social media feed.
+      if (location.search === '?infinite' && scrollY + 3 * innerHeight > rows * rowHeight) {
+        rows += 50;
+        list.style.height = `${rows * rowHeight}px`;
+      }
       const first = Math.max(0, Math.floor((scrollY - innerHeight) / rowHeight));
       const last = Math.min(rows - 1, Math.ceil((scrollY + 2 * innerHeight) / rowHeight));
       list.replaceChildren(...Array.from({ length: last - first + 1 }, (_, i) => {
