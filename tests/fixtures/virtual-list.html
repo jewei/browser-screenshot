@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Virtual list capture test</title>
+  <style>
+    body { margin: 0; font: 20px/1.6 system-ui; background: #f8f9fa; display: flex; }
+    nav { position: sticky; top: 0; height: 100vh; width: 200px; flex: none; background: #2045a0; }
+    main { position: relative; flex: 1; }
+    .row { position: absolute; left: 0; right: 0; height: 100px; box-sizing: border-box; padding: 16px 48px; border-bottom: 1px solid #d7dce1; background: #ffffff; }
+    .row.last { background: #d73545; color: white; }
+  </style>
+</head>
+<body>
+  <nav></nav>
+  <main id="list"></main>
+  <script>
+    // Like X and other feeds, render only rows near the viewport.
+    const rows = 150;
+    const rowHeight = 100;
+    const list = document.querySelector('#list');
+    list.style.height = `${rows * rowHeight}px`;
+    function render() {
+      const first = Math.max(0, Math.floor((scrollY - innerHeight) / rowHeight));
+      const last = Math.min(rows - 1, Math.ceil((scrollY + 2 * innerHeight) / rowHeight));
+      list.replaceChildren(...Array.from({ length: last - first + 1 }, (_, i) => {
+        const row = document.createElement('div');
+        row.className = first + i === rows - 1 ? 'row last' : 'row';
+        row.style.top = `${(first + i) * rowHeight}px`;
+        row.textContent = `Row ${first + i + 1}`;
+        return row;
+      }));
+    }
+    addEventListener('scroll', render);
+    addEventListener('resize', render);
+    render();
+  </script>
+</body>
+</html>

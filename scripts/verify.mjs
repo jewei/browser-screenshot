@@ -10,9 +10,10 @@ const headed = process.argv.includes("--headed");
 const output = path.join(root, "artifacts");
 await mkdir(output, { recursive: true });
 const fixture = await readFile(path.join(root, "tests/fixtures/long-page.html"));
+const virtualFixture = await readFile(path.join(root, "tests/fixtures/virtual-list.html"));
 const server = createServer((request, response) => {
   response.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-  response.end(fixture);
+  response.end(request.url === "/virtual-list" ? virtualFixture : fixture);
 });
 await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
 const fixtureUrl = `http://127.0.0.1:${server.address().port}/long-page`;
@@ -215,6 +216,18 @@ try {
   assert.deepEqual(pixel(widePng, widePng.width - 10, widePng.height - 10), [215, 53, 69]);
   assert.deepEqual(await source.evaluate(() => ({ x: scrollX, y: scrollY })), { x: 120, y: 450 });
   console.log("PASS size-limit error cleanup, retry, and horizontal page capture");
+
+  await source.goto(fixtureUrl.replace("/long-page", "/virtual-list"));
+  await source.evaluate(() => scrollTo({ top: 450, behavior: "instant" }));
+  const virtualPreview = await captureFromPopup(source);
+  const virtualPng = await download(virtualPreview, "test-virtual-list.png");
+  const column = Array.from({ length: virtualPng.height }, (_, y) => pixel(virtualPng, Math.round(virtualPng.width * 0.6), y).join());
+  assert.equal(virtualPng.height, 15000 * scale);
+  assert.ok(column.filter((rgb) => rgb === "255,255,255").length > 14000 * scale, "Every virtual row appears in the PNG");
+  assert.ok(column.slice(-100 * scale).filter((rgb) => rgb === "215,53,69").length > 90 * scale, "The last virtual row appears in the PNG");
+  assert.equal(await source.evaluate(() => scrollY), 450);
+  await source.goto(fixtureUrl);
+  console.log("PASS virtual list rows render in the PNG");
 
   let githubResult;
   if (github) {
