@@ -1,17 +1,23 @@
 import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { PNG } from "pngjs";
-import { captureBounds, isCapturableUrl, pngBlob, pngDimensions, screenshotFilename, readableError } from "../lib/shared.js";
+import { captureBounds, isCapturableUrl, LIMITS, pngBlob, pngDimensions, screenshotFilename, readableError } from "../lib/shared.js";
 
 test("only HTTP and HTTPS pages can be captured", () => {
   for (const url of ["https://github.com/jewei", "http://localhost:3000/path"]) assert.equal(isCapturableUrl(url), true);
   for (const url of ["brave://settings", "chrome://extensions", "file:///tmp/page.html", "data:text/html,hi", "javascript:alert(1)", "bad", undefined]) assert.equal(isCapturableUrl(url), false);
 });
 
-test("capture bounds include the last fractional pixel and enforce limits at device scale", () => {
+test("capture bounds include the last fractional pixel and scale large pages down to fit the limits", () => {
   assert.deepEqual(captureBounds({ width: 1440.25, height: 2900.2 }, 2), { x: 0, y: 0, width: 1441, height: 2901, scale: 1 });
-  assert.throws(() => captureBounds({ width: 1440, height: 18000 }, 2), /too large/);
-  assert.throws(() => captureBounds({ width: 9000, height: 9000 }, 1), /too large/);
+  for (const [size, ratio] of [[{ width: 1440, height: 18000 }, 2], [{ width: 9000, height: 9000 }, 1], [{ width: 2000, height: 9000 }, 2], [{ width: 1440, height: 30000 }, 1]]) {
+    const { scale } = captureBounds(size, ratio);
+    assert.ok(scale < 1 && scale * ratio >= 0.5);
+    const output = [Math.ceil(size.width * ratio * scale), Math.ceil(size.height * ratio * scale)];
+    assert.ok(Math.max(...output) <= LIMITS.maxDimension && output[0] * output[1] <= LIMITS.maxPixels);
+  }
+  assert.throws(() => captureBounds({ width: 1440, height: 70000 }, 1), /too large/);
+  assert.throws(() => captureBounds({ width: 1440, height: 80000 }, 2), /too large/);
   for (const height of [0, -1, NaN, Infinity]) assert.throws(() => captureBounds({ width: 100, height }), /valid size/);
 });
 

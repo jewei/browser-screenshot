@@ -74,7 +74,7 @@ Select **Clear saved previews** to remove all previews and their key. This also 
 ## Limits
 
 - The extension supports HTTP and HTTPS pages. It cannot capture Brave settings, extension pages, local files, or pages that the browser protects from capture.
-- A PNG can have at most 32,767 pixels on either side and 64 million total pixels. The extension shows an error if the image exceeds these limits. Reduce browser zoom to capture a larger document.
+- Brave cannot capture an image taller or wider than 16,384 pixels. A PNG can also have at most 64 million pixels. If a page is larger, the extension scales the PNG down to fit, and the preview tells you. The extension shows an error if the PNG must be smaller than half a pixel for each page pixel. Reduce browser zoom, or turn off **Load page images**, to capture a larger document.
 - Page preparation stops after 25 seconds or 100 scroll steps. For a page that keeps growing, turn off **Load page images** to capture its current content.
 - The extension captures the outer document. Scroll areas inside panels remain as the page displays them. Expand virtual lists, collapsed sections, and content behind a **Show more** button before capture.
 - An image can remain blank if it is unavailable or blocked. The preview reports images that did not load. Video frames and other page content can change during capture.
